@@ -1,0 +1,1195 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Messor barbarus · Sprites</title>
+<style>
+  :root {
+    --bg: #15100e; --panel: #201815; --panel2: #2a201c; --line: #3b2e28;
+    --text: #f4e9df; --muted: #b9a596; --accent: #e5603a; --accent-2: #ffb35c; --ok: #8fd18a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 18px 20px 4px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+  h1 { margin: 0; font-size: 21px; letter-spacing: .2px; }
+  h1 i { color: var(--accent-2); font-weight: 600; }
+  .sub { color: var(--muted); font-size: 13px; }
+  nav.tabs { display: flex; gap: 6px; padding: 10px 20px 0; flex-wrap: wrap; }
+  nav.tabs button {
+    background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px; font: inherit; cursor: pointer;
+  }
+  nav.tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  main { padding: 14px 20px 28px; max-width: 1280px; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .anim-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 16px; align-items: start; }
+  @media (max-width: 880px) { .anim-layout { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  .stage { padding: 10px; max-width: 760px; }
+  .stage canvas { display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; }
+  .panel { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .lbl { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+  .seg { display: flex; gap: 4px; background: var(--panel2); padding: 4px; border-radius: 10px; }
+  .seg button { flex: 1; background: transparent; border: 0; color: var(--text); padding: 8px 6px; border-radius: 7px; font: inherit; cursor: pointer; }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .btn { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font: inherit; cursor: pointer; min-width: 40px; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--muted); }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .chk { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .chk input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .info { background: var(--panel2); border-radius: 10px; padding: 10px 12px; color: var(--muted); font-size: 13px; }
+  .info b { color: var(--text); font-weight: 600; }
+  .game-wrap { position: relative; padding: 10px; }
+  .game-wrap canvas { display: block; width: 100%; height: min(70vh, 640px); border-radius: 10px; cursor: crosshair; touch-action: none; }
+  .hud { position: absolute; left: 22px; top: 20px; background: rgba(21, 16, 14, .72); padding: 6px 10px; border-radius: 8px; font-size: 12.5px; color: var(--text); pointer-events: none; }
+  .game-bar { margin-top: 12px; }
+  .export-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 880px) { .export-grid { grid-template-columns: 1fr; } }
+  .sheet-prev { padding: 12px; }
+  .sheet-prev canvas { display: block; max-width: 100%; height: auto; border-radius: 8px;
+    background: repeating-conic-gradient(#3a302b 0% 25%, #2c2420 0% 50%) 0 0 / 20px 20px; }
+  .note { color: var(--muted); font-size: 13px; }
+  select { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font: inherit; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hormiga obrera <i>Messor barbarus</i></h1>
+  <span class="sub">Vista cenital ortográfica · rig vectorial con IK 3D · estilo casual</span>
+</header>
+<nav class="tabs">
+  <button data-view="anims" class="on">Animaciones</button>
+  <button data-view="game">Demo de juego</button>
+  <button data-view="export">Exportar</button>
+</nav>
+<main>
+  <section id="view-anims" class="view active">
+    <div class="anim-layout">
+      <div class="card stage"><canvas id="stage"></canvas></div>
+      <aside class="card panel">
+        <div>
+          <div class="lbl">Animación</div>
+          <div class="seg" id="animSeg">
+            <button data-anim="idle" class="on">Quieta</button>
+            <button data-anim="walk">Caminar</button>
+            <button data-anim="attack">Atacar</button>
+          </div>
+        </div>
+        <div>
+          <div class="lbl"><span>Frame</span><span id="frameLbl" class="mono">0 / 24</span></div>
+          <input type="range" id="scrub" min="0" max="23" value="0">
+          <div class="row" style="margin-top:8px">
+            <button id="play" class="btn primary" title="Reproducir / pausa">Pausa</button>
+            <button id="prev" class="btn" title="Frame anterior">◀</button>
+            <button id="next" class="btn" title="Frame siguiente">▶</button>
+          </div>
+        </div>
+        <div>
+          <div class="lbl"><span>Velocidad</span><span id="spdLbl" class="mono">1.00×</span></div>
+          <input type="range" id="speed" min="0.1" max="2" step="0.05" value="1">
+        </div>
+        <div>
+          <div class="lbl">Fondo</div>
+          <div class="seg" id="bgSeg">
+            <button data-bg="soil" class="on">Tierra</button>
+            <button data-bg="checker">Alfa</button>
+            <button data-bg="dark">Oscuro</button>
+          </div>
+        </div>
+        <label class="chk"><input type="checkbox" id="shadowChk" checked> Sombra de contacto</label>
+        <label class="chk"><input type="checkbox" id="fxChk" checked> Efecto de impacto</label>
+        <label class="chk"><input type="checkbox" id="scrollChk" checked> Suelo en movimiento al caminar</label>
+        <label class="chk"><input type="checkbox" id="smoothChk"> Rig en vivo a 60 fps (sin cuantizar)</label>
+        <div class="info" id="info"></div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="view-game" class="view">
+    <div class="card game-wrap">
+      <canvas id="game"></canvas>
+      <div class="hud">Clic: mover · Clic sobre otra hormiga: morderla · Espacio / clic derecho: atacar</div>
+    </div>
+    <div class="row game-bar">
+      <button id="addAnt" class="btn">+ Añadir hormiga</button>
+      <button id="clearAnts" class="btn">Quitar las demás</button>
+      <span class="note">Usa los mismos frames de 256 px del sprite sheet, rotados por el motor.</span>
+    </div>
+  </section>
+
+  <section id="view-export" class="view">
+    <div class="export-grid">
+      <div class="card panel">
+        <div>
+          <div class="lbl">Tamaño de frame</div>
+          <select id="exSize"><option>128</option><option selected>256</option><option>512</option><option>1024</option></select>
+        </div>
+        <label class="chk"><input type="checkbox" id="exShadow" checked> Sombra de contacto</label>
+        <label class="chk"><input type="checkbox" id="exFx" checked> Efecto de impacto (atacar)</label>
+        <div class="row">
+          <button class="btn" data-dl="idle">idle.png</button>
+          <button class="btn" data-dl="walk">walk.png</button>
+          <button class="btn" data-dl="attack">attack.png</button>
+          <button class="btn" data-dl="json">JSON</button>
+        </div>
+        <button id="dlAll" class="btn primary">Descargar todo</button>
+        <p class="note" style="margin:0">Pivote en el centro del frame. La hormiga mira hacia arriba (−Y): rota el sprite hacia la dirección de movimiento.</p>
+      </div>
+      <div class="card sheet-prev">
+        <div class="lbl" id="sheetLbl">Vista previa</div>
+        <canvas id="sheetPrev"></canvas>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>/* ant_rig.js — Messor barbarus (hormiga obrera) · vista cenital ortográfica (top-down)
+ * Rig vectorial 2D procedural: IK de patas + animaciones idle / walk / attack, estilo casual.
+ * Lo usan preview.html (navegador) y src/build.mjs (Node + @napi-rs/canvas).
+ * Unidades "rig": la hormiga mira hacia arriba (-Y). PIVOT = centro de rotación del sprite. */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.AntRig = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  /* ------------------------------------------------------------------ math */
+  const TAU = Math.PI * 2;
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const EASE = {
+    lin: (t) => t,
+    smooth: (t) => t * t * (3 - 2 * t),
+    in: (t) => t * t * t,
+    out: (t) => 1 - (1 - t) ** 3,
+    inOut: (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2),
+  };
+  // keyframe track: keys = [[time, value, easeName?], ...] (ease applies to the segment ending at that key)
+  function track(t, keys) {
+    if (t <= keys[0][0]) return keys[0][1];
+    for (let i = 1; i < keys.length; i++) {
+      const k = keys[i];
+      if (t <= k[0]) {
+        const p = keys[i - 1];
+        const u = (t - p[0]) / (k[0] - p[0] || 1);
+        return lerp(p[1], k[1], EASE[k[2] || 'smooth'](u));
+      }
+    }
+    return keys[keys.length - 1][1];
+  }
+  // smooth 0 → 1 → 0 pulse inside [a, b]
+  const pulse = (t, a, b) => (t <= a || t >= b ? 0 : 0.5 - 0.5 * Math.cos((TAU * (t - a)) / (b - a)));
+
+  // 2D affine matrices, canvas order [a, b, c, d, e, f]
+  const Mt = (x, y) => [1, 0, 0, 1, x, y];
+  const Mr = (r) => { const c = Math.cos(r), s = Math.sin(r); return [c, s, -s, c, 0, 0]; };
+  const Ms = (x, y = x) => [x, 0, 0, y, 0, 0];
+  const mul = (m, n) => [
+    m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1],
+    m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
+    m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5],
+  ];
+  const chain = (...ms) => ms.reduce(mul);
+  const apply = (m, x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+  const useM = (ctx, m) => ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+
+  /* ---------------------------------------------------------------- colour */
+  const rgb = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const rgba = (h, a) => { const c = rgb(h); return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
+  const mix = (a, b, t) => {
+    const A = rgb(a), B = rgb(b);
+    return '#' + A.map((v, i) => Math.round(lerp(v, B[i], t)).toString(16).padStart(2, '0')).join('');
+  };
+
+  // Messor barbarus: cabeza roja, mesosoma rojo muy oscuro, gáster negro brillante.
+  const PAL = {
+    line: '#1d0d0a',
+    head: { hi: '#ff9361', mid: '#d24d2c', lo: '#7c1c12' },
+    meso: { hi: '#93483a', mid: '#5a241b', lo: '#250e09' },
+    waist: { hi: '#86412f', mid: '#4f2018', lo: '#210c08' },
+    gaster: { hi: '#66566a', mid: '#2c222b', lo: '#0e090d', rim: '#a9b9ff' },
+    leg: { hi: '#a65d45', mid: '#5e2b1f', lo: '#2a120c' },
+    ant: { hi: '#b9694c', mid: '#6d2f22', lo: '#33150f' },
+    mand: { hi: '#c45a35', mid: '#7a2716', lo: '#220605' },
+    eye: { hi: '#6d6684', mid: '#1d1724', lo: '#060408' },
+  };
+  const OL = 2.0;   // visible outline width (bold, casual)
+  const OLT = 1.35; // thin outline for antennae / tarsi
+
+  /* -------------------------------------------------------------- geometry */
+  // Root space = mesosoma. Head hangs from the neck, the waist chain from the propodeum.
+  const G = {
+    neck: [0, -33],
+    headOff: 23,                 // head centre = neck + (0, -headOff)
+    headW: 27, headH: 24,        // half sizes
+    pron: [0, -23, 15.5, 12],    // cx, cy, rx, ry
+    meson: [0, -10.5, 11.5, 8.6],
+    prop: [0, -0.5, 9.6, 7.4],
+    petJ: [0, 5.5],              // petiole joint (root space)
+    ppetJ: 11.5,                 // postpetiole joint (petiole space)
+    gasJ: 12.2,                  // gaster joint (postpetiole space)
+    gasW: 28, gasL: 60,
+  };
+  const PIVOT = [0, -5];         // sprite rotation centre (rig space)
+  const FRAME_UNITS = 308;       // rig units covered by one square frame
+
+  // Right-side legs (left side mirrored). Legs are solved in 3D (knees bend upwards, like a real ant)
+  // and projected top-down. rest = tarsus tip on the ground; L = [femur, tibia, tarsus];
+  // hint = knee bend plane bias (x outward, y forward/back); w = diameters along the leg.
+  const HIP_Z = 7, LIFT_Z = 6;
+  const LEGS = [
+    { id: 'front', hip: [8, -29], rest: [50, -68], L: [25, 27, 14], hint: [0.8, -0.25], tRot: 0.12, pull: 3, w: [6.4, 5.2, 4.8, 3.7, 2.9, 2] },
+    { id: 'mid', hip: [10, -14], rest: [60, 2], L: [22, 25, 14], hint: [0.15, -0.8], tRot: 0.1, pull: 3, w: [6.2, 5, 4.6, 3.6, 2.8, 1.9] },
+    { id: 'hind', hip: [9, -1], rest: [50, 50], L: [28, 31, 17], hint: [0.8, 0.3], tRot: -0.1, pull: 4, w: [6.8, 5.4, 4.9, 3.7, 2.9, 2] },
+  ];
+
+  // Antenna (right side, head space)
+  const ANT = { ins: [8.6, -16.5], scape: 22, funi: 33, a1: 0.85, a2: -0.45, curve: 3 };
+  const MAND_HINGE = [14, -22.5];
+  const BITE = [0, -53];        // bite point, head space
+
+  /* ------------------------------------------------------------------ IK */
+  // Two-bone IK in 3D: hip h → knee → target t, knee pushed towards `hint` (mostly +Z = up).
+  function solveIK3(h, t, L1, L2, hint) {
+    let d = [t[0] - h[0], t[1] - h[1], t[2] - h[2]];
+    const D0 = Math.hypot(d[0], d[1], d[2]) || 1e-6;
+    const D = clamp(D0, Math.abs(L1 - L2) + 0.5, (L1 + L2) * 0.995);
+    d = d.map((v) => (v * D) / D0);
+    const u = d.map((v) => v / D);
+    const k = hint[0] * u[0] + hint[1] * u[1] + hint[2] * u[2];
+    let n = [hint[0] - k * u[0], hint[1] - k * u[1], hint[2] - k * u[2]];
+    const nl = Math.hypot(n[0], n[1], n[2]) || 1;
+    n = n.map((v) => v / nl);
+    const a = (L1 * L1 - L2 * L2 + D * D) / (2 * D);
+    const hh = Math.sqrt(Math.max(0, L1 * L1 - a * a));
+    return {
+      knee: [0, 1, 2].map((i) => h[i] + u[i] * a + n[i] * hh),
+      end: [0, 1, 2].map((i) => h[i] + d[i]),
+    };
+  }
+
+  /* ---------------------------------------------------------------- poses */
+  function restFeet() {
+    const f = [];
+    for (const side of [-1, 1]) for (const L of LEGS) f.push({ x: side * L.rest[0], y: L.rest[1], lift: 0 });
+    return f; // 0..2 left (front, mid, hind), 3..5 right
+  }
+  function basePose() {
+    return {
+      body: { x: 0, y: 0, rot: 0 },
+      head: { x: 0, y: 0, rot: 0, s: 1 },
+      mand: 0.3,                                   // 0 closed · 1 wide open · <0 clenched
+      ant: [{ a1: 0, a2: 0, c: 0 }, { a1: 0, a2: 0, c: 0 }], // left, right (positive = outward)
+      gaster: { rot: 0, y: 0, s: 1 },
+      feet: restFeet(),
+      fx: null,
+    };
+  }
+
+  // IDLE — 2 s loop: weight shifting, antennae exploring, mandibles tasting, a little foot tap.
+  function idlePose(t) {
+    const p = basePose(), w = TAU * t;
+    p.body.x = 0.9 * Math.sin(w);
+    p.body.y = 0.6 * Math.sin(2 * w + 0.6);
+    p.body.rot = 0.014 * Math.sin(w + 0.8);
+    p.head.rot = 0.05 * Math.sin(w + 0.4) + 0.015 * Math.sin(3 * w);
+    p.mand = 0.3 + 0.2 * pulse(t, 0.04, 0.24) + 0.16 * pulse(t, 0.56, 0.74);
+    const fl = pulse(t, 0.14, 0.4), fr = pulse(t, 0.6, 0.86);
+    p.ant[0].a1 = 0.1 * Math.sin(w + 0.3) - 0.2 * fl;
+    p.ant[0].a2 = 0.14 * Math.sin(2 * w + 1.0) + 0.42 * fl;
+    p.ant[0].c = -2.5 * fl;
+    p.ant[1].a1 = 0.1 * Math.sin(w + 0.3 + Math.PI) - 0.2 * fr;
+    p.ant[1].a2 = 0.14 * Math.sin(2 * w + 1.0 + Math.PI) + 0.42 * fr;
+    p.ant[1].c = -2.5 * fr;
+    p.gaster.rot = 0.04 * Math.sin(w - 0.9);
+    p.gaster.s = 1 + 0.018 * Math.sin(2 * w - 0.5);
+    const tap = pulse(t, 0.3, 0.5);
+    p.feet[3].y -= 4 * tap; p.feet[3].x += 1.5 * tap; p.feet[3].lift = 0.9 * tap;
+    return p;
+  }
+
+  // WALK — alternating tripod gait (L1 R2 L3 / R1 L2 R3), in place; the ground moves.
+  const WALK = { stride: 20, swing: 0.5 };
+  function walkPose(t) {
+    const p = basePose(), w = TAU * t, S = WALK.stride, sw = WALK.swing;
+    for (let i = 0; i < 6; i++) {
+      const side = i < 3 ? -1 : 1, k = i % 3;
+      const groupA = side === -1 ? k !== 1 : k === 1;
+      const ph = (t + (groupA ? 0 : 0.5) + [0, 0.03, 0.06][k]) % 1;
+      const f = p.feet[i];
+      if (ph < sw) {
+        const u = ph / sw;
+        f.y += S / 2 - S * EASE.smooth(u);
+        f.lift = Math.sin(Math.PI * u);
+      } else {
+        f.y += -S / 2 + (S * (ph - sw)) / (1 - sw);
+      }
+    }
+    p.body.x = 1.3 * Math.sin(w + 0.4);
+    p.body.y = 0.8 * Math.cos(2 * w);
+    p.body.rot = 0.032 * Math.sin(w + 1.0);
+    p.head.rot = -0.05 * Math.sin(w + 0.6);
+    p.gaster.rot = 0.08 * Math.sin(w - 1.2);
+    p.mand = 0.28 + 0.05 * Math.sin(2 * w);
+    p.ant[0].a1 = 0.07 * Math.sin(w); p.ant[0].a2 = -0.06 + 0.24 * Math.sin(w + 0.6);
+    p.ant[1].a1 = -0.07 * Math.sin(w); p.ant[1].a2 = -0.06 - 0.24 * Math.sin(w + 0.6);
+    return p;
+  }
+
+  // ATTACK — wind-up, lunge + mandible snap (impact on frame 8), shake, recover.
+  function attackPose(t) {
+    const p = basePose();
+    p.body.y = track(t, [[0, 0], [0.3, 8, 'inOut'], [0.35, -4, 'in'], [0.4, -17, 'out'], [0.5, -13], [0.7, -11], [1, 0, 'inOut']]);
+    p.head.y = track(t, [[0, 0], [0.3, 2.5], [0.35, 0], [0.4, -4, 'out'], [0.6, -2], [1, 0]]);
+    p.head.s = track(t, [[0, 1], [0.3, 1.06, 'inOut'], [0.4, 1.03, 'out'], [0.7, 1.01], [1, 1]]);
+    const u = clamp((t - 0.4) / 0.3, 0, 1);
+    const shake = t > 0.4 && t < 0.7 ? Math.sin(3 * Math.PI * u) * (1 - u) : 0;
+    p.head.rot = 0.2 * shake;
+    p.body.rot = -0.06 * shake;
+    p.body.x = -2.2 * shake;
+    p.mand = track(t, [[0, 0.3], [0.26, 1.15, 'out'], [0.35, 1.22], [0.4, -0.08, 'in'], [0.68, -0.05], [0.86, 0.38], [1, 0.3]]);
+    const back = track(t, [[0, 0], [0.3, 1, 'inOut'], [0.35, 0.2], [0.4, -0.7, 'out'], [0.62, -0.35], [1, 0, 'inOut']]);
+    for (const a of p.ant) { a.a1 = 0.24 * back; a.a2 = 0.36 * back; a.c = -1.5 * back; }
+    p.gaster.y = track(t, [[0, 0], [0.3, -2], [0.4, 3.5, 'out'], [0.52, 0], [1, 0]]);
+    p.gaster.s = track(t, [[0, 1], [0.3, 0.965], [0.4, 1.02], [0.55, 1], [1, 1]]);
+    p.gaster.rot = -0.12 * (t > 0.43 && t < 0.73 ? Math.sin(3 * Math.PI * clamp((t - 0.43) / 0.3, 0, 1)) * (1 - clamp((t - 0.43) / 0.3, 0, 1)) : 0);
+    // feet: front pair steps into the bite, middle pair follows, hind feet push and slide
+    const fStep = track(t, [[0, 0], [0.33, 0], [0.42, 1, 'out'], [0.72, 1], [0.9, 0, 'inOut']]);
+    const fLift = 0.9 * pulse(t, 0.32, 0.46) + 0.8 * pulse(t, 0.72, 0.92);
+    const brace = track(t, [[0, 0], [0.3, 1], [0.35, 1], [0.42, 0]]);
+    for (const i of [0, 3]) { const s = i === 0 ? -1 : 1; p.feet[i].y -= 14 * fStep; p.feet[i].x += s * 3 * brace; p.feet[i].lift = fLift; }
+    const mStep = track(t, [[0, 0], [0.37, 0], [0.48, 1, 'out'], [0.76, 1], [0.95, 0, 'inOut']]);
+    const mLift = 0.7 * pulse(t, 0.36, 0.5) + 0.7 * pulse(t, 0.76, 0.96);
+    for (const i of [1, 4]) { p.feet[i].y -= 8 * mStep; p.feet[i].lift = mLift; }
+    const hSlide = track(t, [[0, 0], [0.35, 0], [0.42, 1, 'out'], [0.7, 1], [0.95, 0, 'inOut']]);
+    for (const i of [2, 5]) p.feet[i].y -= 7 * hSlide;
+    if (t >= 0.33 && t < 0.38) p.fx = { speed: 1 }; // speed lines only on the lunge in-between
+    if (t >= 0.4 && t < 0.65) p.fx = Object.assign(p.fx || {}, { p: (t - 0.4) / 0.25 });
+    return p;
+  }
+
+  const ANIMS = {
+    idle: { frames: 24, fps: 12, loop: true, cols: 6, pose: idlePose },
+    walk: { frames: 16, fps: 24, loop: true, cols: 4, pose: walkPose },
+    attack: { frames: 20, fps: 24, loop: false, cols: 5, pose: attackPose, hitFrame: 8 },
+  };
+  const poseAt = (name, t) => ANIMS[name].pose(t - Math.floor(t)); // exact for i/frames (no (t%1+1)%1 rounding)
+  // ground distance covered by one walk cycle (rig units) and speed (rig units / s)
+  const WALK_CYCLE_UNITS = WALK.stride / (1 - WALK.swing);
+  const WALK_SPEED_UNITS = WALK_CYCLE_UNITS / (ANIMS.walk.frames / ANIMS.walk.fps);
+
+  /* -------------------------------------------------------------- solving */
+  function solve(pose) {
+    const b = pose.body, h = pose.head, gs = pose.gaster;
+    const root = chain(Mt(b.x, b.y), Mr(b.rot));
+    const head = chain(root, Mt(G.neck[0] + h.x, G.neck[1] + h.y), Mr(h.rot), Ms(h.s), Mt(0, -G.headOff));
+    const pet = chain(root, Mt(G.petJ[0], G.petJ[1]), Mr(gs.rot * 0.3));
+    const ppet = chain(pet, Mt(0, G.ppetJ), Mr(gs.rot * 0.3));
+    const gas = chain(ppet, Mt(0, G.gasJ + gs.y), Mr(gs.rot * 0.4), Ms(gs.s));
+    const cr = Math.cos(-b.rot), sr = Math.sin(-b.rot);
+    const toRoot = (x, y) => { const dx = x - b.x, dy = y - b.y; return [cr * dx - sr * dy, sr * dx + cr * dy]; };
+    const legs = [];
+    for (let i = 0; i < 6; i++) {
+      const side = i < 3 ? -1 : 1, d = LEGS[i % 3], f = pose.feet[i], lift = f.lift || 0;
+      const hip = [side * d.hip[0], d.hip[1], HIP_Z];
+      let [tx, ty] = toRoot(f.x, f.y);
+      if (lift > 0) { // tuck the lifted foot a little towards the body
+        const dx = hip[0] - tx, dy = hip[1] - ty, dd = Math.hypot(dx, dy) || 1;
+        tx += (dx / dd) * d.pull * lift; ty += (dy / dd) * d.pull * lift;
+      }
+      // tarsus lies on the ground pointing away from the hip; it droops while the foot is lifted
+      let ux = tx - hip[0], uy = ty - hip[1];
+      const ul = Math.hypot(ux, uy) || 1, tr = side * d.tRot, ct = Math.cos(tr), st = Math.sin(tr);
+      ux /= ul; uy /= ul;
+      [ux, uy] = [ux * ct - uy * st, ux * st + uy * ct];
+      const pitch = 0.9 * lift, tl = d.L[2] * Math.cos(pitch);
+      const ankle3 = [tx - ux * tl, ty - uy * tl, LIFT_Z * lift + 1.2 + d.L[2] * Math.sin(pitch)];
+      const ik = solveIK3(hip, ankle3, d.L[0], d.L[1], [side * d.hint[0], d.hint[1], 1]);
+      const sx = ik.end[0] - ankle3[0], sy = ik.end[1] - ankle3[1]; // unreachable → drag the tarsus along
+      legs.push({
+        side, def: d, lift, kz: ik.knee[2],
+        hip: [hip[0], hip[1]], knee: [ik.knee[0], ik.knee[1]], ankle: [ik.end[0], ik.end[1]], foot: [tx + sx, ty + sy],
+      });
+    }
+    return { root, head, pet, ppet, gas, legs, bite: apply(head, BITE[0], BITE[1]), headPos: apply(head, 0, 0) };
+  }
+
+  /* ------------------------------------------------------------ primitives */
+  function ell(ctx, cx, cy, rx, ry, rot = 0) { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, rot, 0, TAU); }
+  function capsule(ctx, p0, p1, r0, r1) {
+    const a = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
+    ctx.beginPath();
+    ctx.arc(p0[0], p0[1], r0, a + Math.PI / 2, a + (3 * Math.PI) / 2);
+    ctx.arc(p1[0], p1[1], r1, a - Math.PI / 2, a + Math.PI / 2);
+    ctx.closePath();
+  }
+  // closed path mirrored on x = 0 from right-half cubic segments [start, [c1, c2, p], ...]
+  function symPath(ctx, R) {
+    ctx.beginPath();
+    ctx.moveTo(R[0][0], R[0][1]);
+    for (let i = 1; i < R.length; i++) { const [c1, c2, p] = R[i]; ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], p[0], p[1]); }
+    for (let i = R.length - 1; i >= 1; i--) {
+      const [c1, c2] = R[i], prev = i === 1 ? R[0] : R[i - 1][2];
+      ctx.bezierCurveTo(-c2[0], c2[1], -c1[0], c1[1], -prev[0], prev[1]);
+    }
+    ctx.closePath();
+  }
+  function radial(ctx, x, y, r, P, fx = x, fy = y, mid = 0.55) {
+    const g = ctx.createRadialGradient(fx, fy, 0, x, y, r);
+    g.addColorStop(0, P.hi); g.addColorStop(mid, P.mid); g.addColorStop(1, P.lo);
+    return g;
+  }
+  function softSpot(ctx, x, y, r, color, a) {
+    if (a <= 0 || r <= 0) return;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, rgba(color, a)); g.addColorStop(1, rgba(color, 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+  }
+  function outline(ctx, w = OL) { ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = w * 2; ctx.strokeStyle = PAL.line; ctx.stroke(); }
+
+  /* ------------------------------------------------------------------ legs */
+  // leg tone: k = 0 (low, near the ground) … 1 (high, catching more light)
+  const legTone = (k) => ({ hi: mix(PAL.leg.hi, '#ffdcc8', 0.45 * k), mid: mix(PAL.leg.mid, PAL.leg.hi, 0.55 * k), lo: mix(PAL.leg.lo, PAL.leg.mid, 0.6 * k) });
+  function drawLeg(ctx, Lg) {
+    const d = Lg.def, w = d.w, up = Lg.lift;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // tarsal claws
+    const a = Math.atan2(Lg.foot[1] - Lg.ankle[1], Lg.foot[0] - Lg.ankle[0]);
+    ctx.strokeStyle = PAL.line; ctx.lineWidth = 1.1;
+    for (const k of [-0.55, 0.55]) {
+      ctx.beginPath(); ctx.moveTo(Lg.foot[0], Lg.foot[1]);
+      ctx.lineTo(Lg.foot[0] + Math.cos(a + k) * 2.8, Lg.foot[1] + Math.sin(a + k) * 2.8); ctx.stroke();
+    }
+    const kneeK = clamp((Lg.kz - HIP_Z) / 18, 0, 1);
+    const segs = [
+      [Lg.ankle, Lg.foot, w[4], w[5], OLT, legTone(0.05 + 0.35 * up)],
+      [Lg.knee, Lg.ankle, w[2], w[3], OL * 0.85, legTone(0.12 + 0.2 * kneeK + 0.3 * up)],
+      [Lg.hip, Lg.knee, w[0], w[1], OL, legTone(0.22 + 0.3 * kneeK + 0.3 * up)],
+    ];
+    for (const [p0, p1, d0, d1, ol, P] of segs) {
+      capsule(ctx, p0, p1, d0 / 2, d1 / 2);
+      outline(ctx, ol);
+      const dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = Math.hypot(dx, dy) || 1, r = Math.max(d0, d1) / 2;
+      const nx = (-dy / l) * r, ny = (dx / l) * r, mx = (p0[0] + p1[0]) / 2, my = (p0[1] + p1[1]) / 2;
+      const g = ctx.createLinearGradient(mx - nx, my - ny, mx + nx, my + ny);
+      g.addColorStop(0, P.lo); g.addColorStop(0.5, P.mid); g.addColorStop(1, P.lo);
+      ctx.fillStyle = g; ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(lerp(p0[0], p1[0], 0.12), lerp(p0[1], p1[1], 0.12));
+      ctx.lineTo(lerp(p0[0], p1[0], 0.8), lerp(p0[1], p1[1], 0.8));
+      ctx.lineWidth = Math.max(0.7, Math.min(d0, d1) * 0.3); ctx.strokeStyle = rgba(P.hi, 0.9); ctx.stroke();
+    }
+    softSpot(ctx, Lg.knee[0], Lg.knee[1], w[1] * 0.55, segs[2][5].hi, 0.6); // knee knuckle
+  }
+
+  /* ------------------------------------------------------------ body parts */
+  function pathGaster(ctx) {
+    const W = G.gasW, L = G.gasL;
+    symPath(ctx, [[0, -0.6], [[11, -1.6], [W - 1.5, 5], [W, 21]], [[W + 0.6, 37], [18, L - 0.5], [0, L]]]);
+  }
+  function drawGaster(ctx) {
+    const W = G.gasW, L = G.gasL, P = PAL.gaster;
+    // sparse setae (Messor has long erect hairs on the gaster)
+    ctx.strokeStyle = PAL.line; ctx.lineWidth = 0.8; ctx.lineCap = 'round';
+    for (const deg of [28, 52, 76, 104, 128, 152]) {
+      const a = (deg * Math.PI) / 180, x = Math.cos(a) * (W - 1.5), y = 30 + Math.sin(a) * 29.2;
+      const nx = Math.cos(a) / W, ny = Math.sin(a) / 30, nl = Math.hypot(nx, ny);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (nx / nl) * 4.4, y + (ny / nl) * 4.4); ctx.stroke();
+    }
+    pathGaster(ctx); outline(ctx);
+    ctx.fillStyle = radial(ctx, 0, L * 0.4, L * 0.64, P, 0, L * 0.3, 0.5); ctx.fill();
+    ctx.save(); pathGaster(ctx); ctx.clip();
+    pathGaster(ctx); ctx.lineWidth = 6; ctx.strokeStyle = rgba(P.rim, 0.1); ctx.stroke();
+    pathGaster(ctx); ctx.lineWidth = 2.2; ctx.strokeStyle = rgba(P.rim, 0.16); ctx.stroke();
+    // tergite margins
+    for (const [y, a] of [[33, 0.75], [45, 0.65], [53, 0.55]]) {
+      ctx.beginPath(); ctx.moveTo(-W - 2, y - 8); ctx.quadraticCurveTo(0, y + 5, W + 2, y - 8);
+      ctx.lineWidth = 1.5; ctx.strokeStyle = rgba(PAL.line, a); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-W - 2, y - 6.4); ctx.quadraticCurveTo(0, y + 6.6, W + 2, y - 6.4);
+      ctx.lineWidth = 0.9; ctx.strokeStyle = rgba(P.hi, 0.45); ctx.stroke();
+    }
+    // glossy highlights
+    ctx.save(); ctx.translate(0, 17); ctx.scale(1, 1.6); softSpot(ctx, 0, 0, 10, '#ffffff', 0.3); ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,0.88)'; ell(ctx, 0, 12, 2.6, 5.4); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ell(ctx, 0, 21.5, 1.3, 2.1); ctx.fill();
+    for (const s of [-1, 1]) { ctx.fillStyle = 'rgba(220,228,255,0.28)'; ell(ctx, s * 16, 17, 2.2, 6.5, s * -0.35); ctx.fill(); }
+    ctx.restore();
+  }
+  function drawPostpetiole(ctx) {
+    const P = PAL.waist;
+    ell(ctx, 0, 6, 8.3, 6.4); outline(ctx);
+    ctx.fillStyle = radial(ctx, 0, 5.5, 9, P, 0, 3.5); ctx.fill();
+    ctx.fillStyle = 'rgba(255,225,210,0.55)'; ell(ctx, 0, 3.6, 2.2, 1.4); ctx.fill();
+  }
+  function drawPetiole(ctx) {
+    const P = PAL.waist;
+    capsule(ctx, [0, -1.5], [0, 4], 2.4, 2.6); outline(ctx);
+    ell(ctx, 0, 6.5, 6, 5); outline(ctx);
+    ctx.fillStyle = P.mid; capsule(ctx, [0, -1.5], [0, 4], 2.4, 2.6); ctx.fill();
+    ell(ctx, 0, 6.5, 6, 5); ctx.fillStyle = radial(ctx, 0, 6, 7, P, 0, 4.5); ctx.fill();
+    ctx.fillStyle = 'rgba(255,225,210,0.55)'; ell(ctx, 0, 4.6, 1.8, 1.1); ctx.fill();
+  }
+  function drawMesosoma(ctx) {
+    const P = PAL.meso, parts = [G.pron, G.meson, G.prop];
+    for (const e of parts) { ell(ctx, e[0], e[1], e[2], e[3]); outline(ctx); }
+    for (const e of [G.prop, G.meson, G.pron]) {
+      ell(ctx, e[0], e[1], e[2], e[3]);
+      ctx.fillStyle = radial(ctx, e[0], e[1], Math.max(e[2], e[3]) * 1.12, P, e[0], e[1] - e[3] * 0.3); ctx.fill();
+    }
+    // plate margins (promesonotal suture, metanotal groove)
+    ctx.lineCap = 'round';
+    for (const [e, a] of [[G.pron, 0.6], [G.meson, 0.5]]) {
+      ctx.beginPath(); ctx.ellipse(e[0], e[1], e[2] - 0.6, e[3] - 0.6, 0, 0.2 * Math.PI, 0.8 * Math.PI);
+      ctx.lineWidth = 1.2; ctx.strokeStyle = rgba(PAL.line, a); ctx.stroke();
+    }
+    // propodeal angles (blunt denticles)
+    for (const s of [-1, 1]) { ell(ctx, s * 6.6, 4.4, 1.6, 1.3); ctx.fillStyle = rgba(P.hi, 0.6); ctx.fill(); }
+    // sheen
+    ctx.fillStyle = 'rgba(255,224,210,0.7)'; ell(ctx, 0, -27.5, 4.6, 2.2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,224,210,0.45)'; ell(ctx, 0, -12.5, 2.6, 1.5); ctx.fill();
+    for (const s of [-1, 1]) softSpot(ctx, s * 7, -24, 7, '#ffffff', 0.1);
+  }
+
+  /* ------------------------------------------------------------------ head */
+  function pathHead(ctx) {
+    const W = G.headW, H = G.headH;
+    symPath(ctx, [
+      [0, -H - 0.6],
+      [[7.5, -H - 0.6], [14, -H + 0.2], [18.6, -H + 2.4]],
+      [[24.2, -H + 5.4], [W + 0.6, -10.5], [W, 1]],
+      [[W - 0.4, 12.5], [W - 4.2, H - 0.8], [16, H - 0.6]],
+      [[9, H], [4.2, H - 2.8], [0, H - 2.8]],
+    ]);
+  }
+  // right mandible, closed, head space: a curved triangular blade with 4 teeth + hooked apical tooth
+  const MAND_TEETH = (() => {
+    const tip = [-1.5, -45.5], basal = [7, -29.5], pts = [tip];
+    const dx = basal[0] - tip[0], dy = basal[1] - tip[1], l = Math.hypot(dx, dy), ux = dx / l, uy = dy / l, nx = -uy, ny = ux;
+    for (const f of [0.22, 0.44, 0.65, 0.85]) {
+      pts.push([tip[0] + dx * (f - 0.11), tip[1] + dy * (f - 0.11)]);
+      pts.push([tip[0] + dx * f + nx * 2.3 - ux * 1.2, tip[1] + dy * f + ny * 2.3 - uy * 1.2]);
+    }
+    pts.push(basal);
+    return pts;
+  })();
+  function pathMandible(ctx) {
+    ctx.beginPath();
+    ctx.moveTo(8, -20.5);
+    ctx.lineTo(16.5, -20.5);
+    ctx.bezierCurveTo(18.4, -28, 17.4, -36, 12.8, -41.1);
+    ctx.bezierCurveTo(9.2, -45, 3.6, -46.9, MAND_TEETH[0][0], MAND_TEETH[0][1]);
+    for (let i = 1; i < MAND_TEETH.length; i++) ctx.lineTo(MAND_TEETH[i][0], MAND_TEETH[i][1]);
+    ctx.closePath();
+  }
+  function drawMandible(ctx, open) {
+    const P = PAL.mand;
+    ctx.save();
+    ctx.translate(MAND_HINGE[0], MAND_HINGE[1]); ctx.rotate(open * 0.85); ctx.translate(-MAND_HINGE[0], -MAND_HINGE[1]);
+    pathMandible(ctx); outline(ctx);
+    const g = ctx.createLinearGradient(14, -22, 0, -46);
+    g.addColorStop(0, P.hi); g.addColorStop(0.38, P.mid); g.addColorStop(0.85, P.lo); g.addColorStop(1, P.lo);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // serrated cutting edge
+    ctx.beginPath(); ctx.moveTo(MAND_TEETH[0][0], MAND_TEETH[0][1]);
+    for (let i = 1; i < MAND_TEETH.length; i++) ctx.lineTo(MAND_TEETH[i][0], MAND_TEETH[i][1]);
+    ctx.lineWidth = 1.2; ctx.strokeStyle = '#120302'; ctx.stroke();
+    // curved specular band along the outer margin → reads as a separate blade even when closed
+    ctx.beginPath(); ctx.moveTo(15.8, -24.5); ctx.bezierCurveTo(16.8, -30.5, 16, -35.6, 12, -39.6);
+    ctx.lineWidth = 2.4; ctx.strokeStyle = rgba('#ff9e74', 0.55); ctx.stroke();
+    ctx.lineWidth = 0.9; ctx.strokeStyle = rgba('#ffe2cf', 0.9); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,214,190,0.65)'; ell(ctx, 13.6, -27, 1.4, 2.4, -0.2); ctx.fill();
+    ctx.restore();
+  }
+  function antennaGeom(a) {
+    const al = ANT.a1 + a.a1, d1 = [Math.sin(al), -Math.cos(al)];
+    const el = [ANT.ins[0] + d1[0] * ANT.scape, ANT.ins[1] + d1[1] * ANT.scape];
+    const be = al + ANT.a2 + a.a2, d2 = [Math.sin(be), -Math.cos(be)], pr = [Math.cos(be), Math.sin(be)];
+    const tip = [el[0] + d2[0] * ANT.funi, el[1] + d2[1] * ANT.funi];
+    const cv = ANT.curve + (a.c || 0);
+    const c = [el[0] + d2[0] * ANT.funi * 0.5 + pr[0] * cv, el[1] + d2[1] * ANT.funi * 0.5 + pr[1] * cv];
+    const pts = [];
+    for (let i = 0; i <= 12; i++) {
+      const u = i / 12, v = 1 - u;
+      pts.push([v * v * el[0] + 2 * v * u * c[0] + u * u * tip[0], v * v * el[1] + 2 * v * u * c[1] + u * u * tip[1]]);
+    }
+    return { ins: ANT.ins, el, pts };
+  }
+  const FUNI_R = [1.5, 1.38, 1.3, 1.24, 1.2, 1.18, 1.2, 1.32, 1.55, 1.75, 1.84, 1.82, 1.6];
+  function drawAntenna(ctx, s, a) {
+    const g = antennaGeom(a), pts = g.pts, P = PAL.ant;
+    ctx.save(); ctx.scale(s, 1);
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const shapes = [() => capsule(ctx, g.ins, g.el, 2.3, 1.9)];
+    for (let i = 0; i < pts.length - 1; i++) shapes.push(() => capsule(ctx, pts[i], pts[i + 1], FUNI_R[i], FUNI_R[i + 1]));
+    for (const sh of shapes) { sh(); outline(ctx, OLT); }
+    ctx.fillStyle = P.mid;
+    for (const sh of shapes) { sh(); ctx.fill(); }
+    ctx.strokeStyle = rgba(P.hi, 0.9); ctx.lineWidth = 0.95;
+    ctx.beginPath(); ctx.moveTo(lerp(g.ins[0], g.el[0], 0.2), lerp(g.ins[1], g.el[1], 0.2)); ctx.lineTo(lerp(g.ins[0], g.el[0], 0.85), lerp(g.ins[1], g.el[1], 0.85)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pts[1][0], pts[1][1]);
+    for (let i = 2; i < pts.length - 1; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.stroke();
+    // club segment rings
+    ctx.strokeStyle = rgba(PAL.line, 0.55); ctx.lineWidth = 0.7;
+    for (const i of [8, 9, 10, 11]) {
+      const p = pts[i], q = pts[i + 1], dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy) || 1, r = FUNI_R[i];
+      ctx.beginPath(); ctx.moveTo(p[0] - (dy / l) * r, p[1] + (dx / l) * r); ctx.lineTo(p[0] + (dy / l) * r, p[1] - (dx / l) * r); ctx.stroke();
+    }
+    softSpot(ctx, g.el[0], g.el[1], 2.2, P.hi, 0.7);
+    ctx.restore();
+  }
+  function drawEye(ctx, s) {
+    const x = s * 25.2, y = -6.5;
+    ell(ctx, x, y, 4.3, 5.7); outline(ctx, 1.5);
+    const g = ctx.createRadialGradient(x - s * 1.3, y - 2, 0.3, x, y, 6.2);
+    g.addColorStop(0, PAL.eye.hi); g.addColorStop(0.5, PAL.eye.mid); g.addColorStop(1, PAL.eye.lo);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.fillStyle = '#ffffff'; ell(ctx, x - s * 1.1, y - 2.3, 1.5, 1.9); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)'; ell(ctx, x + s * 1.3, y + 2.5, 0.8, 0.8); ctx.fill();
+  }
+  function drawHead(ctx, pose) {
+    const P = PAL.head, H = G.headH;
+    pathHead(ctx); outline(ctx);
+    ctx.fillStyle = radial(ctx, 0, -1, 31, P, 0, -7, 0.58); ctx.fill();
+    ctx.save(); pathHead(ctx); ctx.clip();
+    pathHead(ctx); ctx.lineWidth = 9; ctx.strokeStyle = rgba(P.lo, 0.32); ctx.stroke();
+    pathHead(ctx); ctx.lineWidth = 3.5; ctx.strokeStyle = rgba(P.lo, 0.35); ctx.stroke();
+    // clypeus
+    ctx.beginPath(); ctx.moveTo(-14, -H - 2); ctx.bezierCurveTo(-9, -H + 8.5, 9, -H + 8.5, 14, -H - 2); ctx.closePath();
+    ctx.fillStyle = rgba(P.hi, 0.3); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-13, -H + 0.8); ctx.bezierCurveTo(-8, -H + 8, 8, -H + 8, 13, -H + 0.8);
+    ctx.lineWidth = 1.1; ctx.strokeStyle = rgba(PAL.line, 0.45); ctx.stroke();
+    // longitudinal rugae + frontal carinae
+    ctx.lineCap = 'round';
+    for (const s of [-1, 1]) {
+      ctx.lineWidth = 0.9; ctx.strokeStyle = rgba(P.lo, 0.38);
+      for (const x0 of [12.5, 16, 19.5]) {
+        ctx.beginPath(); ctx.moveTo(s * (x0 - 3.5), -H + 6); ctx.quadraticCurveTo(s * (x0 + 0.5), -8, s * (x0 + 1.5), 7); ctx.stroke();
+      }
+      ctx.lineWidth = 1.1; ctx.strokeStyle = rgba(PAL.line, 0.35);
+      ctx.beginPath(); ctx.moveTo(s * 6.8, -H + 9); ctx.quadraticCurveTo(s * 8, -10, s * 10.5, -3); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.moveTo(0, -H + 10); ctx.lineTo(0, -4); ctx.lineWidth = 1; ctx.strokeStyle = rgba(PAL.line, 0.28); ctx.stroke();
+    // satin highlights
+    for (const s of [-1, 1]) {
+      ctx.save(); ctx.translate(s * 9.5, -5); ctx.scale(1, 1.25); softSpot(ctx, 0, 0, 11, '#ffffff', 0.22); ctx.restore();
+      ctx.fillStyle = 'rgba(255,242,230,0.78)'; ell(ctx, s * 8.6, -9.6, 3.7, 2.1, s * -0.5); ctx.fill();
+      ctx.fillStyle = 'rgba(255,242,230,0.45)'; ell(ctx, s * 13.4, -13.2, 1.2, 0.9); ctx.fill();
+    }
+    ctx.restore();
+    drawEye(ctx, -1); drawEye(ctx, 1);
+    drawAntenna(ctx, -1, pose.ant[0]); drawAntenna(ctx, 1, pose.ant[1]);
+    // frontal lobes over the antennal sockets
+    for (const s of [-1, 1]) {
+      ell(ctx, s * 8.6, -16.4, 3.8, 2.7, s * 0.35);
+      ctx.lineWidth = 1.1; ctx.strokeStyle = rgba(PAL.line, 0.6); ctx.stroke();
+      ctx.fillStyle = mix(P.mid, P.hi, 0.15); ctx.fill();
+      ctx.fillStyle = 'rgba(255,240,228,0.4)'; ell(ctx, s * 8.1, -17.2, 1.5, 0.8, s * 0.35); ctx.fill();
+    }
+  }
+
+  /* ------------------------------------------------------------- effects */
+  const SPIKES = [[-90, 13], [-52, 11], [-128, 11], [-18, 8], [-162, 8]];
+  const DEBRIS = [[-128, 26, 2.3, '#f3e2b8', 0.4], [-52, 24, 2.1, '#c99a5e', 1.2], [-96, 30, 1.7, '#fff3d6', 2.1], [-160, 18, 1.6, '#e2c48d', 0.8], [-20, 19, 1.7, '#b88449', 2.7], [-75, 21, 1.4, '#ffffff', 1.9]];
+  function starPath(ctx, n, r1, r0, rot) {
+    ctx.beginPath();
+    for (let i = 0; i < n * 2; i++) { const a = rot + (i * Math.PI) / n, r = i % 2 ? r0 : r1; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+    ctx.closePath();
+  }
+  function drawFx(ctx, Sv, fx) {
+    ctx.save();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (fx.speed) { // tapered speed lines trailing the lunge
+      const a = fx.speed, [hx, hy] = Sv.headPos;
+      for (const [x, y0, len, wd] of [[-35, -6, 32, 2.4], [35, -6, 32, 2.4], [-25, 18, 24, 1.9], [25, 18, 24, 1.9], [-42, 22, 16, 1.5], [42, 22, 16, 1.5]]) {
+        ctx.beginPath(); ctx.moveTo(hx + x - wd, hy + y0); ctx.lineTo(hx + x + wd, hy + y0); ctx.lineTo(hx + x, hy + y0 + len * a); ctx.closePath();
+        ctx.fillStyle = `rgba(255,255,255,${0.85 * a})`; ctx.fill();
+      }
+    }
+    if (fx.p != null) {
+      const p = clamp(fx.p, 0, 1), q = 1 - p;
+      ctx.translate(Sv.bite[0], Sv.bite[1]);
+      softSpot(ctx, 0, 0, 13 + 8 * p, '#fff6c4', 0.6 * q * q);
+      if (p > 0.05) { // shock ring
+        ctx.beginPath(); ctx.arc(0, 0, 9 + 13 * EASE.out(p), 0, TAU);
+        ctx.lineWidth = 2.6 * q; ctx.strokeStyle = `rgba(255,255,255,${0.9 * q})`; ctx.stroke();
+      }
+      for (const [deg, len] of SPIKES) {
+        const a = (deg * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a);
+        const r0 = 6 + 10 * EASE.out(p), r1 = r0 + len * (1 - 0.7 * p), rm = lerp(r0, r1, 0.35), wd = 2.6 * q + 0.4;
+        ctx.beginPath();
+        ctx.moveTo(ca * r0, sa * r0);
+        ctx.lineTo(ca * rm - sa * wd, sa * rm + ca * wd);
+        ctx.lineTo(ca * r1, sa * r1);
+        ctx.lineTo(ca * rm + sa * wd, sa * rm - ca * wd);
+        ctx.closePath();
+        ctx.lineWidth = 1.8; ctx.strokeStyle = `rgba(255,128,32,${0.9 * q})`; ctx.stroke();
+        ctx.fillStyle = `rgba(255,252,232,${q})`; ctx.fill();
+      }
+      const k = clamp(1 - p / 0.55, 0, 1);
+      if (k > 0) { // impact star with a warm core
+        const r = 17 * k ** 0.7;
+        starPath(ctx, 8, r, r * 0.45, -Math.PI / 2);
+        ctx.lineWidth = 2.2; ctx.strokeStyle = `rgba(255,128,32,${k})`; ctx.stroke();
+        ctx.fillStyle = `rgba(255,255,255,${k})`; ctx.fill();
+        starPath(ctx, 8, r * 0.55, r * 0.26, -Math.PI / 2 + Math.PI / 8);
+        ctx.fillStyle = `rgba(255,216,77,${k})`; ctx.fill();
+      }
+      for (const [deg, dist, sz, col, spin] of DEBRIS) {
+        const a = (deg * Math.PI) / 180, r = 6 + dist * 0.75 * EASE.out(p), al = p < 0.5 ? 1 : 1 - (p - 0.5) / 0.5;
+        ctx.save(); ctx.translate(Math.cos(a) * r, Math.sin(a) * r + 6 * p * p); ctx.rotate(spin + p * 5);
+        ctx.globalAlpha = al;
+        ctx.beginPath(); ctx.moveTo(-sz, -sz * 0.6); ctx.lineTo(sz * 1.1, -sz * 0.3); ctx.lineTo(sz * 0.3, sz * 0.9); ctx.closePath();
+        ctx.lineWidth = 1.4; ctx.strokeStyle = PAL.line; ctx.stroke(); ctx.fillStyle = col; ctx.fill();
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------- shadow */
+  function drawSilhouette(ctx, Sv, pose) {
+    ctx.fillStyle = '#000'; ctx.strokeStyle = '#000'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.save(); useM(ctx, Sv.root);
+    for (const L of Sv.legs) {
+      ctx.globalAlpha = 1 - 0.5 * L.lift;
+      ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(L.hip[0], L.hip[1]); ctx.lineTo(L.knee[0], L.knee[1]); ctx.lineTo(L.ankle[0], L.ankle[1]); ctx.stroke();
+      ctx.lineWidth = 4.5; ctx.beginPath(); ctx.moveTo(L.ankle[0], L.ankle[1]); ctx.lineTo(L.foot[0], L.foot[1]); ctx.stroke();
+    }
+    ctx.globalAlpha = 1; ctx.lineWidth = OL * 2 + 2;
+    for (const e of [G.pron, G.meson, G.prop]) { ell(ctx, e[0], e[1], e[2], e[3]); ctx.fill(); ctx.stroke(); }
+    ctx.restore();
+    ctx.save(); useM(ctx, Sv.pet); ell(ctx, 0, 5, 6, 6.5); ctx.fill(); ctx.stroke(); ctx.restore();
+    ctx.save(); useM(ctx, Sv.ppet); ell(ctx, 0, 6, 8.3, 6.4); ctx.fill(); ctx.stroke(); ctx.restore();
+    ctx.save(); useM(ctx, Sv.gas); pathGaster(ctx); ctx.fill(); ctx.stroke(); ctx.restore();
+    ctx.save(); useM(ctx, Sv.head);
+    pathHead(ctx); ctx.fill(); ctx.stroke();
+    for (const s of [-1, 1]) {
+      ctx.save(); ctx.scale(s, 1);
+      ctx.translate(MAND_HINGE[0], MAND_HINGE[1]); ctx.rotate(pose.mand * 0.85); ctx.translate(-MAND_HINGE[0], -MAND_HINGE[1]);
+      pathMandible(ctx); ctx.fill(); ctx.stroke();
+      ctx.restore();
+      const g = antennaGeom(pose.ant[s < 0 ? 0 : 1]);
+      ctx.save(); ctx.scale(s, 1); ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(g.ins[0], g.ins[1]); ctx.lineTo(g.el[0], g.el[1]);
+      for (const p of g.pts) ctx.lineTo(p[0], p[1]);
+      ctx.stroke(); ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  let canvasFactory = typeof document !== 'undefined' ? (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; } : null;
+  const layers = {};
+  function drawShadow(ctx, Sv, pose, o) {
+    const W = o.width, H = o.height, key = W + 'x' + H;
+    const layer = layers[key] || (layers[key] = canvasFactory(W, H));
+    const lc = layer.getContext('2d');
+    lc.setTransform(1, 0, 0, 1, 0, 0); lc.clearRect(0, 0, W, H);
+    setBase(lc, o);
+    drawSilhouette(lc, Sv, pose);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const off = W + 64;
+    ctx.shadowColor = o.shadowColor || 'rgba(40,20,6,0.45)';
+    ctx.shadowBlur = 10 * o.scale;
+    ctx.shadowOffsetX = off; ctx.shadowOffsetY = 0;
+    ctx.drawImage(layer, -off, 0);
+    ctx.restore();
+  }
+
+  /* ------------------------------------------------------------- render */
+  function setBase(ctx, o) {
+    ctx.setTransform(o.scale, 0, 0, o.scale, o.ox, o.oy);
+    ctx.translate(-PIVOT[0], -PIVOT[1]);
+  }
+  // o: { scale, ox, oy, width, height, shadow=true, fx=true, shadowOnly=false }
+  function drawAnt(ctx, pose, o) {
+    o = Object.assign({ shadow: true, fx: true }, o);
+    if (o.width == null) { o.width = ctx.canvas.width; o.height = ctx.canvas.height; }
+    const Sv = solve(pose);
+    if (o.shadow || o.shadowOnly) drawShadow(ctx, Sv, pose, o);
+    if (o.shadowOnly) return Sv;
+    ctx.save();
+    setBase(ctx, o);
+    ctx.save(); useM(ctx, Sv.root);
+    for (const L of Sv.legs.slice().sort((a, b) => a.lift - b.lift)) drawLeg(ctx, L);
+    ctx.restore();
+    ctx.save(); useM(ctx, Sv.gas); drawGaster(ctx); ctx.restore();
+    ctx.save(); useM(ctx, Sv.ppet); drawPostpetiole(ctx); ctx.restore();
+    ctx.save(); useM(ctx, Sv.pet); drawPetiole(ctx); ctx.restore();
+    ctx.save(); useM(ctx, Sv.root); drawMesosoma(ctx); ctx.restore();
+    ctx.save(); useM(ctx, Sv.head);
+    drawMandible(ctx, pose.mand);
+    ctx.save(); ctx.scale(-1, 1); drawMandible(ctx, pose.mand); ctx.restore();
+    drawHead(ctx, pose);
+    ctx.restore();
+    if (o.fx && pose.fx) drawFx(ctx, Sv, pose.fx);
+    ctx.restore();
+    return Sv;
+  }
+  // Draw frame i of an animation into a square frame of `size` px whose top-left is (x, y).
+  function renderFrame(ctx, name, i, size, opts = {}) {
+    const A = ANIMS[name], s = size / FRAME_UNITS;
+    const x = opts.x || 0, y = opts.y || 0;
+    return drawAnt(ctx, A.pose(i / A.frames), Object.assign({}, opts, { scale: s, ox: x + size / 2, oy: y + size / 2 }));
+  }
+
+  /* ------------------------------------------------------- soil (previews) */
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // Sandy soil with grains, pebbles and seeds. Tiles seamlessly in both axes. k = px per rig unit.
+  function drawSoil(ctx, w, h, k = 1, seed = 7, grain = 1) {
+    const r = rng(seed);
+    ctx.save();
+    ctx.fillStyle = '#d8b583'; ctx.fillRect(0, 0, w, h);
+    const wrap = (x, y, rad, fn) => {
+      for (const ox of [0, -w, w]) for (const oy of [0, -h, h]) {
+        if (x + ox + rad < 0 || x + ox - rad > w || y + oy + rad < 0 || y + oy - rad > h) continue;
+        fn(x + ox, y + oy);
+      }
+    };
+    const area = (w * h) / (k * k);
+    for (let i = 0; i < area / 1100; i++) {
+      const x = r() * w, y = r() * h, rad = (14 + r() * 30) * k, c = r() < 0.5 ? '#c9a26f' : '#e6cb9e';
+      wrap(x, y, rad, (X, Y) => softSpot(ctx, X, Y, rad, c, 0.35));
+    }
+    for (let i = 0; i < (area / 16) * grain; i++) {
+      const x = r() * w, y = r() * h, rad = (0.35 + r() * 0.7) * k;
+      const c = ['#bf9764', '#efd9ae', '#ad8656', '#e6cc9c', '#9c7a50'][(r() * 5) | 0];
+      ctx.fillStyle = rgba(c, 0.35 + r() * 0.35);
+      wrap(x, y, rad, (X, Y) => { ctx.beginPath(); ctx.arc(X, Y, rad, 0, TAU); ctx.fill(); });
+    }
+    for (let i = 0; i < (area / 900) * (0.3 + 0.7 * Math.min(1, grain)); i++) {
+      const x = r() * w, y = r() * h, rx = (1.6 + r() * 3.6) * k, ry = rx * (0.6 + r() * 0.35), rot = r() * TAU;
+      const base = ['#c2a37c', '#b0936f', '#cdb28c', '#a88b6a'][(r() * 4) | 0];
+      wrap(x, y, rx + 3 * k, (X, Y) => {
+        ctx.save(); ctx.translate(X, Y); ctx.rotate(rot);
+        ctx.fillStyle = 'rgba(70,40,15,0.22)'; ell(ctx, 0.8 * k, 1.2 * k, rx * 1.05, ry * 1.05); ctx.fill();
+        const g = ctx.createRadialGradient(-rx * 0.3, -ry * 0.4, 0, 0, 0, rx);
+        g.addColorStop(0, mix(base, '#ffffff', 0.35)); g.addColorStop(1, base);
+        ctx.fillStyle = g; ell(ctx, 0, 0, rx, ry); ctx.fill();
+        ctx.restore();
+      });
+    }
+    for (let i = 0; i < area / 2600; i++) {
+      const x = r() * w, y = r() * h, len = (3.5 + r() * 2.5) * k, rot = r() * TAU, c = ['#e8cf8f', '#c4955a', '#f3e0b0'][(r() * 3) | 0];
+      wrap(x, y, len + 2 * k, (X, Y) => {
+        ctx.save(); ctx.translate(X, Y); ctx.rotate(rot);
+        ctx.fillStyle = 'rgba(70,40,15,0.2)'; ell(ctx, 0.6 * k, 0.9 * k, len, len * 0.48); ctx.fill();
+        ell(ctx, 0, 0, len, len * 0.46); ctx.fillStyle = c; ctx.fill();
+        ctx.lineWidth = 0.7 * k; ctx.strokeStyle = 'rgba(110,70,30,0.6)'; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-len * 0.7, 0); ctx.lineTo(len * 0.7, 0); ctx.strokeStyle = 'rgba(110,70,30,0.35)'; ctx.stroke();
+        ctx.restore();
+      });
+    }
+    ctx.restore();
+  }
+
+  return {
+    ANIMS, PIVOT, FRAME_UNITS, WALK, WALK_CYCLE_UNITS, WALK_SPEED_UNITS, PAL,
+    poseAt, basePose, drawAnt, renderFrame, drawSoil, solve,
+    setCanvasFactory: (fn) => { canvasFactory = fn; },
+  };
+});
+</script>
+<script>
+(() => {
+  'use strict';
+  const R = window.AntRig, ANIMS = R.ANIMS;
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+  const DPR = Math.min(2, window.devicePixelRatio || 1);
+  const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+  const NAMES = { idle: 'Quieta', walk: 'Caminar', attack: 'Atacar' };
+
+  // ------------------------------------------------------------ tabs
+  $$('nav.tabs button').forEach((b) => b.addEventListener('click', () => {
+    $$('nav.tabs button').forEach((x) => x.classList.toggle('on', x === b));
+    $$('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + b.dataset.view));
+    if (b.dataset.view === 'game') game.show();
+    if (b.dataset.view === 'export') exporter.refresh();
+  }));
+
+  // ---------------------------------------------------- shared helpers
+  const soilCache = {};
+  function soilTile(w, h, k) {
+    const key = w + 'x' + h + '@' + k.toFixed(4);
+    if (!soilCache[key]) { const c = mk(w, h); R.drawSoil(c.getContext('2d'), w, h, k, 11); soilCache[key] = c; }
+    return soilCache[key];
+  }
+  function checker(ctx, w, h, s) {
+    ctx.fillStyle = '#e9e4df'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#cfc8c1';
+    for (let y = 0; y < h; y += s) for (let x = (y / s) % 2 ? s : 0; x < w; x += 2 * s) ctx.fillRect(x, y, s, s);
+  }
+
+  // ----------------------------------------------------- animation tab
+  const stage = $('#stage'), sctx = stage.getContext('2d');
+  const st = { anim: 'idle', t: 0, playing: true, speed: 1, bg: 'soil', shadow: true, fx: true, scroll: true, smooth: false };
+  const frameOf = () => { const A = ANIMS[st.anim]; return Math.floor(st.t * A.fps + 1e-6) % A.frames; };
+
+  function info() {
+    const A = ANIMS[st.anim], k = 256 / R.FRAME_UNITS;
+    let s = `<b>${A.frames}</b> frames · <b>${A.fps}</b> fps · ${(A.frames / A.fps).toFixed(2)} s · ${A.loop ? 'loop' : 'una vez'}`;
+    if (st.anim === 'walk') s += `<br>Avance por ciclo: <b>${(R.WALK_CYCLE_UNITS * k).toFixed(1)} px</b> · velocidad de suelo <b>${(R.WALK_SPEED_UNITS * k).toFixed(1)} px/s</b> (frame de 256 px)`;
+    if (st.anim === 'attack') s += `<br>Golpe (mordisco) en el <b>frame ${A.hitFrame}</b> · ${(A.hitFrame / A.fps).toFixed(2)} s`;
+    if (st.anim === 'idle') s += '<br>Respiración, antenas explorando, mandíbulas "saboreando" y un toque de pata.';
+    $('#info').innerHTML = s;
+    $('#scrub').max = A.frames - 1;
+  }
+  function setAnim(name) {
+    st.anim = name; st.t = 0;
+    $$('#animSeg button').forEach((b) => b.classList.toggle('on', b.dataset.anim === name));
+    info();
+  }
+  $$('#animSeg button').forEach((b) => b.addEventListener('click', () => setAnim(b.dataset.anim)));
+  $$('#bgSeg button').forEach((b) => b.addEventListener('click', () => {
+    st.bg = b.dataset.bg; $$('#bgSeg button').forEach((x) => x.classList.toggle('on', x === b));
+  }));
+  const setPlaying = (p) => { st.playing = p; $('#play').textContent = p ? 'Pausa' : 'Reproducir'; };
+  $('#play').addEventListener('click', () => setPlaying(!st.playing));
+  const step = (d) => { setPlaying(false); const A = ANIMS[st.anim]; st.t = ((frameOf() + d + A.frames) % A.frames) / A.fps + 1e-4; };
+  $('#prev').addEventListener('click', () => step(-1));
+  $('#next').addEventListener('click', () => step(1));
+  $('#scrub').addEventListener('input', (e) => { setPlaying(false); st.t = +e.target.value / ANIMS[st.anim].fps + 1e-4; });
+  $('#speed').addEventListener('input', (e) => { st.speed = +e.target.value; $('#spdLbl').textContent = st.speed.toFixed(2) + '×'; });
+  $('#shadowChk').addEventListener('change', (e) => { st.shadow = e.target.checked; });
+  $('#fxChk').addEventListener('change', (e) => { st.fx = e.target.checked; });
+  $('#scrollChk').addEventListener('change', (e) => { st.scroll = e.target.checked; });
+  $('#smoothChk').addEventListener('change', (e) => { st.smooth = e.target.checked; });
+
+  function drawStage() {
+    const W = Math.max(64, Math.round(stage.clientWidth * DPR));
+    if (stage.width !== W) { stage.width = stage.height = W; }
+    const k = W / R.FRAME_UNITS, A = ANIMS[st.anim];
+    sctx.setTransform(1, 0, 0, 1, 0, 0);
+    const f = frameOf();
+    const phase = st.smooth ? (st.t * A.fps / A.frames) % 1 : f / A.frames;
+    if (st.bg === 'soil') {
+      const tile = soilTile(W, W, k);
+      let off = 0;
+      if (st.anim === 'walk' && st.scroll) {
+        const time = st.smooth ? st.t : Math.floor(st.t * A.fps + 1e-6) / A.fps;
+        off = (time * R.WALK_SPEED_UNITS * k) % W;
+      }
+      sctx.drawImage(tile, 0, off - W); sctx.drawImage(tile, 0, off);
+    } else if (st.bg === 'checker') checker(sctx, W, W, Math.round(12 * DPR));
+    else { sctx.fillStyle = '#2b2321'; sctx.fillRect(0, 0, W, W); }
+    R.drawAnt(sctx, R.poseAt(st.anim, phase), { scale: k, ox: W / 2, oy: W / 2, width: W, height: W, shadow: st.shadow, fx: st.fx });
+    $('#frameLbl').textContent = `${f} / ${A.frames}`;
+    if (document.activeElement !== $('#scrub')) $('#scrub').value = f;
+  }
+
+  // ---------------------------------------------------------- game demo
+  const game = (() => {
+    const cv = $('#game'), ctx = cv.getContext('2d');
+    const SPR = 256, DISP = 120;                       // sprite frame size (px) and on-screen size (CSS px)
+    const kDisp = DISP / R.FRAME_UNITS;                // CSS px per rig unit
+    const SPEED = R.WALK_SPEED_UNITS * kDisp;           // CSS px / s → feet stay planted
+    const CYCLE = R.WALK_CYCLE_UNITS * kDisp;           // CSS px per walk cycle
+    const atk = ANIMS.attack, HIT_T = atk.hitFrame / atk.fps, ATK_T = atk.frames / atk.fps;
+    const hitSv = R.solve(R.poseAt('attack', atk.hitFrame / atk.frames));
+    const REACH = -(hitSv.bite[1] - R.PIVOT[1]) * kDisp; // bite distance in front of the pivot
+    let frames = null, W = 0, H = 0, ants = [], player = null, fxs = [], running = false, pattern = null;
+
+    function prerender() {
+      frames = {};
+      for (const [name, A] of Object.entries(ANIMS)) {
+        frames[name] = [];
+        for (let i = 0; i < A.frames; i++) {
+          const c = mk(SPR, SPR);
+          R.renderFrame(c.getContext('2d'), name, i, SPR, { width: SPR, height: SPR });
+          frames[name].push(c);
+        }
+      }
+    }
+    function resize() {
+      const r = cv.getBoundingClientRect();
+      W = r.width; H = r.height;
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+      const tile = soilTile(Math.round(512 * DPR), Math.round(512 * DPR), kDisp * DPR);
+      pattern = ctx.createPattern(tile, 'repeat');
+    }
+    const newAnt = (x, y, isPlayer) => ({ x, y, a: -Math.PI / 2 + (isPlayer ? 0 : Math.random() * 6), state: 'idle', t: Math.random() * 2, phase: 0, goal: null, prey: null, atkT: 0, hit: false, isPlayer, wait: 1 + Math.random() * 2, kbx: 0, kby: 0, flash: 0 });
+    function spawn() { ants.push(newAnt(60 + Math.random() * (W - 120), 60 + Math.random() * (H - 120), false)); }
+    function show() {
+      if (!frames) prerender();
+      resize();
+      if (!player) { player = newAnt(W / 2, H / 2 + 40, true); ants.push(player); for (let i = 0; i < 3; i++) spawn(); }
+      running = true;
+    }
+    const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+    function startAttack(a) { if (a.state === 'attack') return; a.state = 'attack'; a.atkT = 0; a.hit = false; }
+    function update(a, dt) {
+      a.flash = Math.max(0, a.flash - dt);
+      a.x += a.kbx * dt; a.y += a.kby * dt; a.kbx *= Math.exp(-10 * dt); a.kby *= Math.exp(-10 * dt);
+      if (a.state === 'attack') {
+        a.atkT += dt;
+        if (!a.hit && a.atkT >= HIT_T) {
+          a.hit = true;
+          const bx = a.x + Math.cos(a.a) * REACH, by = a.y + Math.sin(a.a) * REACH;
+          fxs.push({ x: bx, y: by - 10, t: 0, text: '-' + (3 + Math.floor(Math.random() * 3)) });
+          for (const o of ants) {
+            if (o === a || Math.hypot(o.x - bx, o.y - by) > DISP * 0.32) continue;
+            o.kbx += Math.cos(a.a) * 260; o.kby += Math.sin(a.a) * 260; o.flash = 0.25;
+            if (!o.isPlayer) { o.goal = { x: o.x + Math.cos(a.a) * 160, y: o.y + Math.sin(a.a) * 160 }; o.state = 'walk'; }
+          }
+        }
+        if (a.atkT >= ATK_T) { a.state = 'idle'; a.t = 0; }
+        return;
+      }
+      if (a.prey) {
+        a.goal = { x: a.prey.x, y: a.prey.y };
+        const d = Math.hypot(a.prey.x - a.x, a.prey.y - a.y), err = Math.abs(wrapA(Math.atan2(a.prey.y - a.y, a.prey.x - a.x) - a.a));
+        if (d < REACH * 1.05 && err < 0.35) { a.goal = null; a.prey = null; startAttack(a); return; }
+      }
+      if (!a.isPlayer && !a.goal) {
+        a.wait -= dt;
+        if (a.wait <= 0) { a.goal = { x: 60 + Math.random() * (W - 120), y: 60 + Math.random() * (H - 120) }; a.wait = 1 + Math.random() * 2.5; }
+      }
+      if (a.goal) {
+        const dx = a.goal.x - a.x, dy = a.goal.y - a.y, dist = Math.hypot(dx, dy);
+        if (dist < (a.prey ? REACH * 0.9 : 6)) { a.goal = null; a.state = 'idle'; a.t = 0; return; }
+        const da = wrapA(Math.atan2(dy, dx) - a.a), turn = Math.max(-4 * dt, Math.min(4 * dt, da));
+        a.a += turn;
+        const move = Math.abs(da) < 1.3 ? SPEED * dt * Math.max(0, Math.cos(da)) : 0;
+        a.x += Math.cos(a.a) * move; a.y += Math.sin(a.a) * move;
+        a.x = Math.max(20, Math.min(W - 20, a.x)); a.y = Math.max(20, Math.min(H - 20, a.y));
+        a.phase = (a.phase + (move + Math.abs(turn) * 14) / CYCLE) % 1; // legs advance with distance → no foot sliding
+        a.state = 'walk';
+      } else { a.state = 'idle'; a.t += dt; }
+    }
+    const tint = mk(SPR, SPR), tctx = tint.getContext('2d');
+    function drawAnt(a) {
+      let img;
+      if (a.state === 'attack') img = frames.attack[Math.min(atk.frames - 1, Math.floor(a.atkT * atk.fps))];
+      else if (a.state === 'walk') img = frames.walk[Math.floor(a.phase * ANIMS.walk.frames) % ANIMS.walk.frames];
+      else img = frames.idle[Math.floor(a.t * ANIMS.idle.fps) % ANIMS.idle.frames];
+      if (a.flash > 0) {
+        tctx.globalCompositeOperation = 'source-over'; tctx.clearRect(0, 0, SPR, SPR); tctx.drawImage(img, 0, 0);
+        tctx.globalCompositeOperation = 'source-atop'; tctx.fillStyle = `rgba(255,70,40,${Math.min(0.6, a.flash * 2.4)})`; tctx.fillRect(0, 0, SPR, SPR);
+        img = tint;
+      }
+      ctx.save(); ctx.translate(a.x, a.y);
+      if (a.isPlayer) { // selection ring
+        ctx.beginPath(); ctx.ellipse(0, 0, DISP * 0.36, DISP * 0.36, 0, 0, Math.PI * 2);
+        ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(255,214,90,0.75)'; ctx.setLineDash([7, 6]); ctx.stroke(); ctx.setLineDash([]);
+      }
+      ctx.rotate(a.a + Math.PI / 2);
+      ctx.drawImage(img, -DISP / 2, -DISP / 2, DISP, DISP);
+      ctx.restore();
+    }
+    function frame(dt) {
+      if (!running) return;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.save(); ctx.scale(1 / DPR, 1 / DPR); ctx.fillStyle = pattern; ctx.fillRect(0, 0, W * DPR, H * DPR); ctx.restore();
+      for (const a of ants) update(a, dt);
+      for (const a of ants) if (a !== player) drawAnt(a);
+      drawAnt(player);
+      fxs = fxs.filter((f) => (f.t += dt) < 0.9);
+      for (const f of fxs) {
+        const al = 1 - f.t / 0.9;
+        ctx.font = '800 20px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
+        ctx.lineWidth = 4; ctx.strokeStyle = `rgba(40,12,4,${al})`; ctx.strokeText(f.text, f.x, f.y - 40 * f.t);
+        ctx.fillStyle = `rgba(255,236,170,${al})`; ctx.fillText(f.text, f.x, f.y - 40 * f.t);
+      }
+      if (game.marker) {
+        const m = game.marker, p = (m.t += dt) / 0.5;
+        if (p < 1) { ctx.beginPath(); ctx.arc(m.x, m.y, 6 + 14 * p, 0, Math.PI * 2); ctx.lineWidth = 2.5 * (1 - p); ctx.strokeStyle = `rgba(255,255,255,${1 - p})`; ctx.stroke(); }
+      }
+    }
+    const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    cv.addEventListener('pointerdown', (e) => {
+      if (!player) return;
+      const p = pos(e);
+      if (e.button === 2) { player.goal = null; player.prey = null; startAttack(player); return; }
+      const hit = ants.find((o) => o !== player && Math.hypot(o.x - p.x, o.y - p.y) < DISP * 0.3);
+      player.prey = hit || null;
+      player.goal = { x: p.x, y: p.y };
+      game.marker = { x: p.x, y: p.y, t: 0 };
+    });
+    cv.addEventListener('contextmenu', (e) => e.preventDefault());
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && running && $('#view-game').classList.contains('active')) { e.preventDefault(); player.goal = null; player.prey = null; startAttack(player); }
+    });
+    window.addEventListener('resize', () => { if (running) resize(); });
+    $('#addAnt').addEventListener('click', () => { if (frames) spawn(); });
+    $('#clearAnts').addEventListener('click', () => { ants = ants.filter((a) => a === player); });
+    return { show, frame, marker: null, get running() { return running && $('#view-game').classList.contains('active'); } };
+  })();
+
+  // ------------------------------------------------------------- export
+  const exporter = (() => {
+    function sheet(name, size, shadow, fx) {
+      const A = ANIMS[name], cols = A.cols, rows = Math.ceil(A.frames / cols);
+      const out = mk(cols * size, rows * size), octx = out.getContext('2d');
+      const fc = mk(size, size), fctx = fc.getContext('2d');
+      for (let i = 0; i < A.frames; i++) {
+        fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.clearRect(0, 0, size, size);
+        R.renderFrame(fctx, name, i, size, { shadow, fx, width: size, height: size });
+        octx.drawImage(fc, (i % cols) * size, Math.floor(i / cols) * size);
+      }
+      return out;
+    }
+    function meta(size, shadow, fx) {
+      const k = size / R.FRAME_UNITS, m = { name: 'Messor barbarus — hormiga obrera', view: 'top-down orthographic (cenital)', facing: 'up (-Y)', frameSize: size, pivot: { x: size / 2, y: size / 2 }, shadow, fx, animations: {} };
+      for (const [name, A] of Object.entries(ANIMS)) {
+        const e = { image: `messor_${name}.png`, frames: A.frames, columns: A.cols, rows: Math.ceil(A.frames / A.cols), fps: A.fps, loop: A.loop };
+        if (name === 'walk') { e.cycleDistancePx = +(R.WALK_CYCLE_UNITS * k).toFixed(1); e.groundSpeedPxPerSec = +(R.WALK_SPEED_UNITS * k).toFixed(1); }
+        if (name === 'attack') { const sv = R.solve(R.poseAt('attack', A.hitFrame / A.frames)); e.hitFrame = A.hitFrame; e.hitOffsetPx = { x: +((sv.bite[0] - R.PIVOT[0]) * k).toFixed(1), y: +((sv.bite[1] - R.PIVOT[1]) * k).toFixed(1) }; }
+        m.animations[name] = e;
+      }
+      return m;
+    }
+    const opts = () => ({ size: +$('#exSize').value, shadow: $('#exShadow').checked, fx: $('#exFx').checked });
+    function download(blob, fname) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+    async function dl(what) {
+      const o = opts();
+      if (what === 'json') return download(new Blob([JSON.stringify(meta(o.size, o.shadow, o.fx), null, 2)], { type: 'application/json' }), `messor_barbarus_${o.size}.json`);
+      const c = sheet(what, o.size, o.shadow, o.fx);
+      await new Promise((res) => c.toBlob((b) => { download(b, `messor_${what}.png`); res(); }, 'image/png'));
+    }
+    $$('[data-dl]').forEach((b) => b.addEventListener('click', () => dl(b.dataset.dl)));
+    $('#dlAll').addEventListener('click', async () => { for (const w of ['idle', 'walk', 'attack', 'json']) { await dl(w); await new Promise((r) => setTimeout(r, 300)); } });
+    let prevAnim = 'walk';
+    function refresh() {
+      const o = opts(), c = sheet(prevAnim, 128, o.shadow, o.fx), pv = $('#sheetPrev');
+      pv.width = c.width; pv.height = c.height; pv.getContext('2d').drawImage(c, 0, 0);
+      const A = ANIMS[prevAnim];
+      $('#sheetLbl').textContent = `Vista previa · ${NAMES[prevAnim]} · ${A.cols}×${Math.ceil(A.frames / A.cols)} frames (a 128 px)`;
+    }
+    ['#exShadow', '#exFx'].forEach((s) => $(s).addEventListener('change', refresh));
+    $$('[data-dl]').forEach((b) => b.addEventListener('mouseenter', () => { if (b.dataset.dl !== 'json' && b.dataset.dl !== prevAnim) { prevAnim = b.dataset.dl; refresh(); } }));
+    return { refresh };
+  })();
+
+  // --------------------------------------------------------------- loop
+  let last = performance.now();
+  function tick(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if ($('#view-anims').classList.contains('active')) {
+      if (st.playing) st.t += dt * st.speed;
+      drawStage();
+    }
+    if (game.running) game.frame(dt);
+    requestAnimationFrame(tick);
+  }
+  info();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
